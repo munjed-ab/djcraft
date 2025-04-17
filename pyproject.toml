@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dj-eleva"
+version = "0.1.0"
+description = "Boilerplate generator for django projects."
+authors = ["munjed-ab <abazamunged@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+Jinja2 = "^3.0.3"
+click = "^8.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+django-boilerplate = "boilerplate_generator.cli:main"
