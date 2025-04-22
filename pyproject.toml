@@ -5,11 +5,13 @@ description = "Boilerplate generator for django projects."
 authors = ["munjed-ab <abazamunged@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = true
 
 [tool.poetry.dependencies]
 python = "^3.12"
 Jinja2 = "^3.0.3"
 click = "^8.0.4"
+rich = "^14.0.0"
 
 [build-system]
 requires = ["poetry-core"]
