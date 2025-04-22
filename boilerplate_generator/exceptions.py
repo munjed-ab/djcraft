@@ -95,3 +95,16 @@ class EnvironmentError(DjangoBoilerplateError):
         super().__init__(
             f"Environment '{env}' configuration error: {error}"
         )
+
+
+class InvalidDirectoryNameError(Exception):
+    """Base exception class for all boilerplate generator exceptions"""
+    pass
+
+class StructureValidationError(Exception):
+    """Base exception class for all boilerplate generator exceptions"""
+    pass
+
+class InvalidPathError(Exception):
+    """Base exception class for all boilerplate generator exceptions"""
+    pass

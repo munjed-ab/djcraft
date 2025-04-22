@@ -1,435 +1,830 @@
 import argparse
-from pathlib import Path
-from typing import Dict, List, Optional
+import json
+import os
+import sys
 
-from .config import Config, ValidationRules
-from .exceptions import InvalidAppNameError, InvalidProjectNameError
+import yaml
+
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.prompt import Confirm, IntPrompt, Prompt
+    from rich.table import Table
+    from rich.tree import Tree
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+
+from config import Config
+from exceptions import DjangoBoilerplateError
+from generator import DjangoProjectGenerator
+from project_structure_manager import ProjectStructureManager
 
 
-class DjangoBoilerplateGenerator:
-    def __init__(
-        self,
-        project_name: str,
-        apps: Optional[List[str]] = None,
-        core_location: str = Config.DEFAULT_PROJECT_STRUCTURE['core_location'],
-        use_docker: bool = Config.CLI_DEFAULTS['use_docker'],
-        use_celery: bool = Config.CLI_DEFAULTS['use_celery'],
-        use_redis: bool = Config.CLI_DEFAULTS['use_redis'],
-        env: str = 'dev'
-    ):
-        self.project_name = project_name
-        self.apps = apps or []
-        self.core_location = core_location
-        self.use_docker = use_docker
-        self.use_celery = use_celery
-        self.use_redis = use_redis
-        self.env = env
-        self.project_path = Path(project_name)
-        self.core_path = self._get_core_path()
-
-    def _get_core_path(self) -> str:
-        """Determine core directory path based on configuration"""
-        if self.core_location == 'inside':
-            return f"{Config.DEFAULT_PROJECT_STRUCTURE['apps_dir']}/core"
-        return 'core'
-
-    def _get_core_full_path(self) -> Path:
-        """Get the full path to the core directory"""
-        return self.project_path / Path(self.core_path)
-
-    def validate_inputs(self) -> None:
-        """Validate project and app names"""
-        if not ValidationRules.is_valid_project_name(self.project_name):
-            raise InvalidProjectNameError(f"Invalid project name: {self.project_name}")
+class DjangoBoilerplateCLI:
+    """
+    Command Line Interface for Django Boilerplate Generator
+    """
+    def __init__(self):
+        self.console = Console() if RICH_AVAILABLE else None
+        self.structure_manager = None
         
-        for app in self.apps:
-            if not ValidationRules.is_valid_app_name(app):
-                raise InvalidAppNameError(f"Invalid app name: {app}")
-
-    def generate_project(self) -> None:
-        """Main method to generate the entire project structure"""
-        self.validate_inputs()
-        print("Validating...")
-        self._create_base_structure()
-        print("Creating base structure...")
-        self._generate_core_files()
-        print("Creating core files...")
-        self._generate_apps()
-        print("Generating apps...")
+    def run(self):
+        """Main entry point for the CLI"""
+        parser = self._create_argument_parser()
+        args = parser.parse_args()
         
-        if self.use_docker:
-            self._generate_docker_files()
-        
-        if self.use_celery:
-            print("WE USING CELERY")
-            self._generate_celery_files()
-        
-        if self.use_redis:
-            self._generate_redis_config()
-        
-        self._generate_readme()
-        print(f"Successfully created Django project '{self.project_name}'")
-
-    def _generate_celery_files(self) -> None:
-        """Generate Celery configuration files"""
-        print("Generating Celery files...")
-        
-        self._render_template(
-            'project_template/core/celery.py.template',
-            self._get_core_full_path() / 'celery.py',
-            {
-                'project_name': self.project_name,
-                'core_path': self.core_path
-            }
-        )
-        
-        celery_import = "\n# Import Celery app\nfrom .celery import app as celery_app\n\n__all__ = ('celery_app',)"
-        
-        init_path = self._get_core_full_path() / '__init__.py'
-        if init_path.exists():
-            with open(init_path, 'r') as f:
-                content = f.read()
-            
-            if 'celery_app' not in content:
-                with open(init_path, 'w') as f:
-                    f.write(content + celery_import)
+        if args.command == 'create':
+            self._handle_create_command(args)
+        elif args.command == 'interactive':
+            self._handle_interactive_mode()
+        elif args.command == 'generate':
+            self._handle_generate_from_config(args)
+        elif args.command == 'validate':
+            self._handle_validate_command(args)
         else:
-            with open(init_path, 'w') as f:
-                f.write(celery_import)
-        
-        settings_path = self._get_core_full_path() / 'settings' / 'base.py'
-        if settings_path.exists():
-            with open(settings_path, 'r') as f:
-                content = f.read()
-            
-            celery_settings = """
-# Celery Configuration
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-"""
-            
-            if 'CELERY_BROKER_URL' not in content:
-                with open(settings_path, 'a') as f:
-                    f.write("\n" + celery_settings)
-
-    def _generate_redis_config(self) -> None:
-        """Generate Redis configuration in settings"""
-        print("Configuring Redis...")
-        
-        settings_path = self._get_core_full_path() / 'settings' / 'base.py'
-        if settings_path.exists():
-            with open(settings_path, 'r') as f:
-                content = f.read()
-            
-            redis_settings = """
-# Redis Cache Configuration
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-# Redis Session Configuration
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
-"""
-            
-            if 'REDIS_URL' not in content:
-                with open(settings_path, 'a') as f:
-                    f.write("\n" + redis_settings)
-
-        req_path = self.project_path / 'requirements.txt'
-        redis_packages = [
-            'django-redis>=5.2.0',
-            'redis>=4.3.4'
-        ]
-        
-        existing_content = ""
-        if req_path.exists():
-            with open(req_path, 'r') as f:
-                existing_content = f.read()
-        
-        with open(req_path, 'a') as f:
-            for package in redis_packages:
-                if package not in existing_content:
-                    f.write(f"{package}\n")
-
-    def _generate_readme(self) -> None:
-        """Generate project README.md file"""
-        print("Generating README.md...")
-        
-        self._render_template(
-            'project_template/README.md.template',
-            self.project_path / 'README.md',
-            {
-                'project_name': self.project_name,
-                'apps': self.apps,
-                'use_docker': self.use_docker,
-                'use_celery': self.use_celery,
-                'use_redis': self.use_redis,
-                'core_location': self.core_location
-            }
+            parser.print_help()
+    
+    def _create_argument_parser(self):
+        """Create argument parser for CLI"""
+        parser = argparse.ArgumentParser(
+            description='Django Project Boilerplate Generator',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-
-    def _create_base_structure(self) -> None:
-        """Create the basic directory structure"""
-
-        self.project_path.mkdir(exist_ok=True)
         
-        if self.apps or self.core_location == 'inside':
-            (self.project_path / Config.DEFAULT_PROJECT_STRUCTURE['apps_dir']).mkdir(exist_ok=True)
+        subparsers = parser.add_subparsers(dest='command', help='Command to execute')
+        
+        create_parser = subparsers.add_parser('create', help='Create a new Django project')
+        create_parser.add_argument('project_name', help='Name of the Django project')
+        create_parser.add_argument(
+            '--apps',
+            nargs='+',
+            default=[],
+            help='List of apps to create'
+        )
+        create_parser.add_argument(
+            '--dir',
+            action='append',
+            dest='directories',
+            default=[],
+            help='Add directories to project (can be used multiple times). Format: name:parent'
+        )
+        create_parser.add_argument(
+            '--app-dir',
+            action='append',
+            dest='app_directories',
+            default=[],
+            help='Place apps in directories. Format: app_name:directory_path'
+        )
+        create_parser.add_argument(
+            '--core-location',
+            choices=['root', 'custom'],
+            default=Config.DEFAULT_PROJECT_STRUCTURE['core_location'],
+            help='Location of core configuration'
+        )
+        create_parser.add_argument(
+            '--core-path',
+            help='Custom path for core files (when --core-location=custom)'
+        )
+        create_parser.add_argument(
+            '--services',
+            nargs='+',
+            choices=list(Config.AVAILABLE_SERVICES.keys()),
+            default=[],
+            help='Services to include in the project'
+        )
+        create_parser.add_argument(
+            '--service-options',
+            type=json.loads,
+            default={},
+            help='JSON string with service options'
+        )
+        
+        interactive_parser = subparsers.add_parser(
+            'interactive',
+            help='Create a project in interactive mode'
+        )
+        
+        generate_parser = subparsers.add_parser(
+            'generate',
+            help='Generate project from config file'
+        )
+        generate_parser.add_argument(
+            'config_file',
+            help='Path to YAML or JSON configuration file'
+        )
+        
+        validate_parser = subparsers.add_parser(
+            'validate',
+            help='Validate project configuration file without generating'
+        )
+        validate_parser.add_argument(
+            'config_file',
+            help='Path to YAML or JSON configuration file to validate'
+        )
+        
+        return parser
+    
+    def _handle_create_command(self, args):
+        """Handle the create command"""
+        try:
+            self.structure_manager = ProjectStructureManager(args.project_name)
+            
+            if args.core_location == 'custom':
+                if not args.core_path:
+                    raise ValueError("--core-path is required when --core-location=custom")
+                self.structure_manager.set_core_location(args.core_location, args.core_path)
 
-        self._get_core_full_path().mkdir(exist_ok=True)
+            # add directories
+            for dir_spec in args.directories:
+                if ':' in dir_spec:
+                    name, parent = dir_spec.split(':', 1)
+                else:
+                    name, parent = dir_spec, ""
+                self.structure_manager.add_directory(name, parent)
+            
+            # add apps
+            for app in args.apps:
+                app_dir = ""
+                # check if app should be placed in a specific directory
+                for app_dir_spec in args.app_directories:
+                    app_name, dir_path = app_dir_spec.split(':', 1)
+                    if app_name == app:
+                        app_dir = dir_path
+                        break
+                
+                self.structure_manager.add_app(app, app_dir)
+            
+            # add services with options
+            for service in args.services:
+                options = args.service_options.get(service, {})
+                self.structure_manager.add_service(service, options)
+            
+            # gen project
+            generator = DjangoProjectGenerator(self.structure_manager)
+            generator.generate_project()
+            
+            self._print_success(f"Django project '{args.project_name}' created successfully!")
+            
+        except DjangoBoilerplateError as e:
+            self._print_error(f"Error: {e}")
+            sys.exit(1)
+        except Exception as e:
+            self._print_error(f"Unexpected error: {e}")
+            sys.exit(1)
 
-        for folder in Config.DEFAULT_PROJECT_STRUCTURE['required_folders']:
-            (self.project_path / folder).mkdir(exist_ok=True)
+    def _print_error(self, message):
+        self.console.print(f"[bold red]{message}[/bold red]")
 
-        for file in Config.DEFAULT_FILES['project']:
-            self._render_template(
-                f'project_template/{file}.template',
-                self.project_path / file,
-                {'core_path': self.core_path}
+    def _print_success(self, message):
+        self.console.print(f"[bold green]{message}[/bold green]")
+
+    def _handle_interactive_mode(self):
+        """Handle interactive project creation mode"""
+        if not RICH_AVAILABLE:
+            print("Rich library is required for interactive mode.")
+            print("Install it with: pip install rich")
+            sys.exit(1)
+        
+        try:
+            self._print_welcome()
+            
+            project_name = Prompt.ask(
+                "[bold blue]Enter project name[/bold blue]",
+                default=Config.CLI_DEFAULTS['project_name']
             )
-
-    def _generate_core_files(self) -> None:
-        """Generate all core project files"""
-        settings_dir = self._get_core_full_path() / 'settings'
-        settings_dir.mkdir(exist_ok=True)
-        
-        self._render_template(
-            'project_template/core/__init__.py',
-            self._get_core_full_path() / '__init__.py'
-        )
-        
-        self._render_template(
-            'project_template/core/urls.py',
-            self._get_core_full_path() / 'urls.py',
-            {
-                'core_path': self.core_path,
-                'apps': self.apps,
-                'core_location': self.core_location
-            }
-        )
-        
-        self._render_template(
-            'project_template/core/wsgi.py',
-            self._get_core_full_path() / 'wsgi.py',
-            {'core_path': self.core_path}
-        )
-        
-        self._render_template(
-            'project_template/core/asgi.py',
-            self._get_core_full_path() / 'asgi.py',
-            {'core_path': self.core_path}
-        )
-        
-        if Config.DEFAULT_PROJECT_STRUCTURE['settings_structure'] == 'folder':
-            self._generate_split_settings()
-        else:
-            self._generate_single_settings_file()# TODO:
-
-    def _generate_docker_files(self) -> None:
-        """Generate all core project files"""
-        docker_dir = self.project_path / 'docker'
-        docker_dir.mkdir(exist_ok=True)
-        
-        self._render_template(
-            'docker_template/Dockerfile.template',
-            docker_dir / 'Dockerfile'
-        )
-
-    def _generate_split_settings(self) -> None:
-        """Generate the split settings configuration"""
-        settings_dir = self._get_core_full_path() / 'settings'
-        settings_dir.mkdir(exist_ok=True)
-        
-        parent_dir = ""
-        if self.core_location == 'inside':
-            parent_dir = ".parent"
-        
-        apps_imports = ""
-        if self.apps:
-            app_format = "'apps.{}'" if self.core_location == 'outside' else "'{}'"
-            apps_imports = ",\n    ".join([app_format.format(app) for app in self.apps])
-        
-        self._render_template(
-            'project_template/core/settings/base.py',
-            settings_dir / 'base.py',
-            {
-                'parent_dir': parent_dir,
-                'apps_imports': apps_imports,
-                'core_path': self.core_path,
-                'default_apps': Config.DJANGO_DEFAULTS['default_apps'],
-                'middleware': Config.DJANGO_DEFAULTS['default_middleware']
-            }
-        )
-        
-        static_media_settings = """
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-"""
-        
-        for env in ['dev', 'prod']:
-            self._render_template(
-                f'project_template/core/settings/{env}.py',
-                settings_dir / f'{env}.py',
-                {
-                    'core_path': self.core_path,
-                    'static_media_settings': static_media_settings
-                }
-            )
-        
-        # Initalize settings module with proper environment
-        self._render_template(
-            'project_template/core/settings/__init__.py',
-            settings_dir / '__init__.py',
-            {'env': self.env}
-        )
-
-    def _generate_apps(self) -> None:
-        """Generate all specified apps"""
-        for app in self.apps:
-            app_dir = self.project_path / Config.DEFAULT_PROJECT_STRUCTURE['apps_dir'] / app
-            app_dir.mkdir(exist_ok=True)
-
-            for file in Config.DEFAULT_FILES['app']:
-                self._render_template(
-                    f'app_template/{file}.template',
-                    app_dir / file,
-                    {'app_name': app}
-                )
-
-            (app_dir / 'migrations').mkdir(exist_ok=True)
-            (app_dir / 'tests').mkdir(exist_ok=True)
-
-            self._render_template(
-                'app_template/tests/test_models.py.template',
-                app_dir / 'tests' / 'test_models.py'
-            )
-
-            self._render_template(
-                'app_template/migrations/__init__.py.template',
-                app_dir / 'migrations' / '__init__.py'
-            )
-
-    def _render_template(self, template_name: str, output_path: Path, context: Optional[Dict] = None) -> None:
-        """Render a template file with the given context"""
-        context = context or {}
-        template_ext = Config.TEMPLATE_CONFIG['template_ext']
-
-        template_full_path = Path(Config.TEMPLATE_CONFIG['template_dir']) / template_name
-        if not template_full_path.exists():
-            if not template_name.endswith(template_ext):
-                template_name += template_ext
-                template_full_path = Path(Config.TEMPLATE_CONFIG['template_dir']) / template_name
             
-            if not template_full_path.exists():
-                raise FileNotFoundError(
-                    f"Template '{template_name}' not found in: {template_full_path.parent}"
-                )
+            self.structure_manager = ProjectStructureManager(project_name)
+            
+            self._interactive_menu()
+            
+            if Confirm.ask("[bold green]Generate project now?[/bold green]"):
+                # show final structure preview
+                self._preview_structure()
+                
+                if Confirm.ask("[bold green]Proceed with generation?[/bold green]"):
+                    generator = DjangoProjectGenerator(self.structure_manager)
+                    generator.generate_project()
+                    self._print_success(f"Django project '{project_name}' created successfully!")
+            else:
+                # save configuration to a file
+                if Confirm.ask("[bold blue]Save configuration to file?[/bold blue]"):
+                    config_path = Prompt.ask(
+                        "[bold blue]Enter file path to save configuration[/bold blue]",
+                        default=f"{project_name}_config.yaml"
+                    )
+                    # TODO:
+                    # self._save_configuration(config_path)
+                    self._print_success(f"Configuration saved to {config_path}")
+            
+        except DjangoBoilerplateError as e:
+            self._print_error(f"Error: {e}")
+            sys.exit(1)
+        except Exception as e:
+            self._print_error(f"Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+    
+    def _handle_generate_from_config(self, args):
+        """Handle project generation from config file"""
+        try:
+            config_path = args.config_file
+            
+            if not os.path.exists(config_path):
+                raise FileNotFoundError(f"Config file not found: {config_path}")
+            
+            config = self._load_config_file(config_path)
+            self._create_project_from_config(config)
+            
+        except DjangoBoilerplateError as e:
+            self._print_error(f"Error: {e}")
+            sys.exit(1)
+        except Exception as e:
+            self._print_error(f"Unexpected error: {e}")
+            sys.exit(1)
+    
+    def _handle_validate_command(self, args):
+        """Handle validation of a configuration file"""
+        try:
+            config_path = args.config_file
+            
+            if not os.path.exists(config_path):
+                raise FileNotFoundError(f"Config file not found: {config_path}")
+            
+            config = self._load_config_file(config_path)   
+            # validate configuration from confiog file
+            errors = self._validate_config(config)
+            
+            if errors:
+                self._print_error("Configuration validation failed:")
+                for error in errors:
+                    self._print_error(f"  - {error}")
+                sys.exit(1)
+            else:
+                self._print_success("Configuration is valid!")
+                
+                if RICH_AVAILABLE and Confirm.ask("[bold blue]Show structure preview?[/bold blue]"):
+                    self._create_project_structure_from_config(config, preview_only=True)
+                    # self._preview_structure()
+            
+        except Exception as e:
+            self._print_error(f"Validation error: {e}")
+            sys.exit(1)
+    
+    def _load_config_file(self, config_path):
+        """Load configuration from YAML or JSON file"""
+        with open(config_path, 'r') as f:
+            if config_path.endswith('.yaml') or config_path.endswith('.yml'):
+                config = yaml.safe_load(f)
+            elif config_path.endswith('.json'):
+                config = json.load(f)
+            else:
+                raise ValueError("Config file must be YAML or JSON")
         
-        if Config.TEMPLATE_CONFIG['template_engine'] == 'jinja2':
-            from jinja2 import Environment, FileSystemLoader
-            template_dir = template_full_path.parent
-            template_file = template_full_path.name
-            env = Environment(loader=FileSystemLoader(template_dir))
-            template = env.get_template(template_file)
-            rendered = template.render(**context)
-        # else:
-        #     from string import Template
-        #     with open(template_full_path) as f:
-        #         template = Template(f.read())
-        #     rendered = template.safe_substitute(**context)  #  safe_substitute to avoid errors for missing placeholders
-
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        return config
+    
+    def _validate_config(self, config):
+        """Validate configuration without creating project"""
+        errors = []
         
-        with open(output_path, 'w') as f:
-            f.write(rendered)
+        if 'project_name' not in config:
+            errors.append("Missing required field: project_name")
+            return errors
+        
+        project_name = config.get('project_name')
+        if not project_name:
+            errors.append("Project name cannot be empty")
+        
+        # create temporary structure manager for validation
+        try:
+            structure_manager = ProjectStructureManager(project_name)
+            
+            core_config = config.get('core', {})
+            core_location = core_config.get('location', Config.DEFAULT_PROJECT_STRUCTURE['core_location'])
+            core_path = core_config.get('path', 'core')
+            
+            try:
+                structure_manager.set_core_location(core_location, core_path)
+            except Exception as e:
+                errors.append(f"Invalid core configuration: {e}")
+            
+            # validete directories
+            directories = config.get('directories', [])
+            for directory in directories:
+                name = directory.get('name')
+                parent = directory.get('parent', "")
+                
+                if not name:
+                    errors.append("Directory missing name")
+                    continue
+                
+                try:
+                    structure_manager.add_directory(name, parent)
+                except Exception as e:
+                    errors.append(f"Invalid directory '{name}': {e}")
+            
+            # validate apps
+            apps = config.get('apps', [])
+            for app in apps:
+                name = app.get('name')
+                directory = app.get('directory', "")
+                
+                if not name:
+                    errors.append("App missing name")
+                    continue
+                
+                try:
+                    structure_manager.add_app(name, directory)
+                except Exception as e:
+                    errors.append(f"Invalid app '{name}': {e}")
+            
+            # calidate services
+            services = config.get('services', [])
+            for service in services:
+                name = service.get('name')
+                options = service.get('options', {})
+                
+                if not name:
+                    errors.append("Service missing name")
+                    continue
+                
+                if name not in Config.AVAILABLE_SERVICES:
+                    errors.append(f"Unknown service: {name}")
+                    continue
+                
+                try:
+                    structure_manager.add_service(name, options)
+                except Exception as e:
+                    errors.append(f"Invalid service '{name}': {e}")
+            
+            # run structure validation
+            structure_errors = structure_manager.validate_structure()
+            errors.extend(structure_errors)
+            
+        except Exception as e:
+            errors.append(f"Configuration error: {e}")
+        
+        return errors
+    
+    def _create_project_from_config(self, config):
+        """Create project from configuration"""
 
-def main():
-    parser = argparse.ArgumentParser(
-        description='Django Project Boilerplate Generator',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        'project_name',
-        help='Name of the Django project'
-    )
-
-    parser.add_argument(
-        '--apps',
-        nargs='+',
-        default=Config.CLI_DEFAULTS['apps'],
-        help='List of apps to create'
-    )
-    
-    parser.add_argument(
-        '--core-location',
-        choices=['inside', 'outside'],
-        default=Config.DEFAULT_PROJECT_STRUCTURE['core_location'],
-        help='Location of core configuration'
-    )
-    
-    parser.add_argument(
-        '--docker',
-        action='store_true',
-        default=Config.CLI_DEFAULTS['use_docker'],
-        help='Include Docker configuration'
-    )
-    
-    parser.add_argument(
-        '--celery',
-        action='store_true',
-        default=Config.CLI_DEFAULTS['use_celery'],
-        help='Include Celery configuration'
-    )
-    
-    parser.add_argument(
-        '--redis',
-        action='store_true',
-        default=Config.CLI_DEFAULTS['use_redis'],
-        help='Include Redis configuration'
-    )
-    
-    parser.add_argument(
-        '--env',
-        choices=['dev', 'prod'],
-        default='dev',
-        help='Environment to configure'
-    )
-    
-    args = parser.parse_args()
-    
-    try:
-        generator = DjangoBoilerplateGenerator(
-            project_name=args.project_name,
-            apps=args.apps,
-            core_location=args.core_location,
-            use_docker=args.docker,
-            use_celery=args.celery,
-            use_redis=args.redis,
-            env=args.env
-        )
-        print("Generating project...")
+        project_name = config.get('project_name')
+        if not project_name:
+            raise ValueError("Missing project name in configuration")
+        
+        structure_manager = self._create_project_structure_from_config(config)
+        
+        generator = DjangoProjectGenerator(structure_manager)
         generator.generate_project()
-    except (InvalidProjectNameError, InvalidAppNameError) as e:
-        print(f"Error: {e}")
-        exit(1)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        exit(1)
+        
+        self._print_success(f"Django project '{project_name}' created successfully!")
+    
+    def _create_project_structure_from_config(self, config, preview_only=False):
+        """Create project structure from configuration"""
+        project_name = config.get('project_name')
+        
+        structure_manager = ProjectStructureManager(project_name)
+        
+        core_config = config.get('core', {})
+        core_location = core_config.get('location', Config.DEFAULT_PROJECT_STRUCTURE['core_location'])
+        core_path = core_config.get('path', 'core')
+        structure_manager.set_core_location(core_location, core_path)
+        
+        directories = config.get('directories', [])
+        for directory in directories:
+            name = directory.get('name')
+            parent = directory.get('parent', "")
+            structure_manager.add_directory(name, parent)
+        
+        apps = config.get('apps', [])
+        for app in apps:
+            name = app.get('name')
+            directory = app.get('directory', "")
+            structure_manager.add_app(name, directory)
+        
+        if not preview_only:
+            services = config.get('services', [])
+            for service in services:
+                name = service.get('name')
+                options = service.get('options', {})
+                structure_manager.add_service(name, options)
+        
+        self.structure_manager = structure_manager
+        
+        return structure_manager
+    
+    def _print_welcome(self):
+        """Print welcome message for interactive mode"""
+        if self.console:
+            self.console.print(Panel(
+                "[bold green]Django Boilerplate Generator[/bold green]\n\n"
+                "Create a fully customized Django project with flexible structure and services.",
+                title="Welcome",
+                expand=False
+            ))
+        else:
+            print("Welcome to Django Boilerplate Generator")
+            print("======================================")
+            print()
+    
+    def _interactive_menu(self):
+        """Show interactive menu for project configuration"""
+        while True:
+            self._print_menu()
+            
+            choice = self._get_menu_choice()
+            
+            if choice == 1:
+                self._configure_core_location()
+            elif choice == 2:
+                self._manage_directories()
+            elif choice == 3:
+                self._manage_apps()
+            elif choice == 4:
+                self._manage_services()
+            elif choice == 5:
+                self._preview_structure()
+            elif choice == 6:
+                break
+    
+    def _print_menu(self):
+        """Print the main interactive menu"""
+        if self.console:
+            self.console.print("\n[bold blue]Main Menu[/bold blue]")
+            table = Table(show_header=False, expand=False)
+            table.add_column("Option", style="cyan")
+            table.add_column("Description")
+            
+            table.add_row("1", "Configure Core Location")
+            table.add_row("2", "Manage Directories")
+            table.add_row("3", "Manage Apps")
+            table.add_row("4", "Manage Services")
+            table.add_row("5", "Preview Project Structure")
+            table.add_row("6", "Done")
+            
+            self.console.print(table)
+        else:
+            print("\nMain Menu:")
+            print("1. Configure Core Location")
+            print("2. Manage Directories")
+            print("3. Manage Apps")
+            print("4. Manage Services")
+            print("5. Preview Project Structure")
+            print("6. Done")
+    
+    def _get_menu_choice(self):
+        """Get menu choice from user"""
+        if self.console:
+            return IntPrompt.ask("[bold cyan]Select an option[/bold cyan]", choices=["1", "2", "3", "4", "5", "6"])
+        else:
+            while True:
+                try:
+                    choice = int(input("Select an option (1-6): "))
+                    if 1 <= choice <= 6:
+                        return choice
+                    print("Invalid choice. Please enter a number between 1 and 6.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+    
+    def _configure_core_location(self):
+        """Configure core location interactively"""
+        if self.console:
+            self.console.print("\n[bold blue]Configure Core Location[/bold blue]")
+            
+            options = ["root", "custom"]
+            descriptions = [
+                "Project root",
+                "Custom path"
+            ]
+            
+            table = Table(show_header=True)
+            table.add_column("Option", style="cyan")
+            table.add_column("Description")
+            
+            for i, (option, desc) in enumerate(zip(options, descriptions)):
+                table.add_row(str(i+1), desc)
+            
+            self.console.print(table)
+            
+            choice = IntPrompt.ask(
+                "[bold cyan]Select core location[/bold cyan]",
+                choices=["1", "2"],
+                default="2"
+            )
+            
+            location_type = options[choice-1]
+            
+            core_path = "core"
+            if location_type == "custom":
+                core_path = Prompt.ask(
+                    "[bold cyan]Enter custom path for core files[/bold cyan]",
+                    default="core"
+                )
+            
+            try:
+                self.structure_manager.set_core_location(location_type, core_path)
+                self.console.print("[green]Core location updated![/green]")
+            except:
+                self._print_error(
+                    f"Directory {core_path} already exist."
+                )
+                return
+        else:
+            print("\nConfigure Core Location:")
+            print("1. Project root")
+            print("2. Custom path")
+            
+            while True:
+                try:
+                    choice = int(input("Select core location (1-2): "))
+                    if 1 <= choice <= 2:
+                        break
+                    print("Invalid choice. Please enter a number between 1 and 2.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            
+            options = ["root", "custom"]
+            location_type = options[choice-1]
+            
+            core_path = "core"
+            if location_type == "custom":
+                core_path = input("Enter custom path for core files [core]: ") or "core"
+            
+            self.structure_manager.set_core_location(location_type, core_path)
+            print("Core location updated!")
+    
+    def _manage_directories(self):
+        """Manage directories interactively"""
+        while True:
+            if self.console:
+                self.console.print("\n[bold blue]Manage Directories[/bold blue]")
+                
+                # Show existing directories
+                self._show_directories()
+                
+                table = Table(show_header=False, expand=False)
+                table.add_column("Option", style="cyan")
+                table.add_column("Description")
+                
+                table.add_row("1", "Add Directory")
+                table.add_row("2", "Back to Main Menu")
+                
+                self.console.print(table)
+                
+                choice = IntPrompt.ask(
+                    "[bold cyan]Select an option[/bold cyan]",
+                    choices=["1", "2"],
+                    default="1"
+                )
+                
+                if choice == 1:
+                    self._add_directory_interactive()
+                else:
+                    break
+            else:
+                print("\nManage Directories:")
+                self._show_directories()
+                print("1. Add Directory")
+                print("2. Back to Main Menu")
+                
+                while True:
+                    try:
+                        choice = int(input("Select an option (1-2): "))
+                        if 1 <= choice <= 2:
+                            break
+                        print("Invalid choice. Please enter a number between 1 and 2.")
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                
+                if choice == 1:
+                    self._add_directory_interactive()
+                else:
+                    break
+    
+    def _show_directories(self):
+        """Show existing directories"""
+        dirs = self.structure_manager.structure['directories']
+        
+        if not dirs:
+            if self.console:
+                self.console.print("[italic]No directories defined yet[/italic]")
+            else:
+                print("No directories defined yet")
+            return
+        
+        if self.console:
+            self.console.print("[bold]Existing Directories:[/bold]")
+            self._show_directory_tree()
+        else:
+            print("Existing Directories:")
+            for dir_path, info in dirs.items():
+                print(f"  - {dir_path}")
+    
+    def _show_directory_tree(self):
+        """Show directory tree using Rich"""
+        if not self.console:
+            return
+        
+        tree = Tree(f"📁 {self.structure_manager.project_name} (Root)")
+        
+        # get top-level directories
+        top_dirs = {path: info for path, info in self.structure_manager.structure['directories'].items()
+                   if not info['parent']}
+        
+        # get core path
+        core_location = self.structure_manager.structure['core']['location']
+        core_path = self.structure_manager.structure['core']['path']
+        
+        # add core node
+        # TODO: must find a way to note the (Core) when custom
+        core_node = tree.add(f"📁 {core_path} (Core)")
+        
+        # build directory tree
+        for path, info in sorted(top_dirs.items()):
+            dir_node = tree.add(f"📁 {info['name']}")
+            self._add_subdirectories(dir_node, path)
+        
+        # show apps in their directories
+        apps = self.structure_manager.structure['apps']
+        root_apps = {name: path for name, path in apps.items() if '/' not in path}
+        
+        # show root apps
+        for name, path in sorted(root_apps.items()):
+            tree.add(f"🔸 {name} (App)")
+        
+        self.console.print(tree)
+    
+    def _preview_structure(self):
+        """Show existing directories"""
+        dirs = self.structure_manager.structure['directories']
+        
+        if self.console:
+            self.console.print("[bold]Existing Directories:[/bold]")
+            self._show_directory_tree()
+        else:
+            print("Existing Directories:")
+            for dir_path, info in dirs.items():
+                print(f"  - {dir_path}")
 
-if __name__ == '__main__':
-    main()
+    def _add_subdirectories(self, parent_node, parent_path):
+        """Recursively add subdirectories to tree"""
+        dirs = self.structure_manager.structure['directories']
+        apps = self.structure_manager.structure['apps']
+        
+        subdirs = {path: info for path, info in dirs.items()
+                  if info['parent'] == parent_path}
+
+        dir_apps = {name: path for name, path in apps.items()
+                   if path.startswith(f"{parent_path}/") and '/' not in path[len(parent_path)+1:]}
+        
+        for path, info in sorted(subdirs.items()):
+            dir_node = parent_node.add(f"📁 {info['name']}")
+            self._add_subdirectories(dir_node, path)
+        
+        for name, path in sorted(dir_apps.items()):
+            parent_node.add(f"🔸 {name} (App)")
+    
+    def _add_directory_interactive(self):
+        """Add directory interactively"""
+        if self.console:
+            name = Prompt.ask("[bold cyan]Enter directory name[/bold cyan]")
+            
+            # show directory structure for parent selection
+            self._show_directories()
+            
+            parent = Prompt.ask(
+                "[bold cyan]Enter parent directory (leave empty for root)[/bold cyan]",
+                default=""
+            )
+            
+            try:
+                path = self.structure_manager.add_directory(name, parent)
+                self.console.print(f"[green]Directory '{path}' added![/green]")
+            except Exception as e:
+                self.console.print(f"[bold red]Error: {e}[/bold red]")
+        else:
+            name = input("Enter directory name: ")
+            
+            # show directory structure for parent selection
+            self._show_directories()
+            
+            parent = input("Enter parent directory (leave empty for root): ") or ""
+            
+            try:
+                path = self.structure_manager.add_directory(name, parent)
+                print(f"Directory '{path}' added!")
+            except Exception as e:
+                print(f"Error: {e}")
+    
+    def _manage_apps(self):
+        """Manage apps interactively"""
+        while True:
+            if self.console:
+                self.console.print("\n[bold blue]Manage Apps[/bold blue]")
+                
+                # show existing apps in a table
+                self._show_apps()
+                
+                table = Table(show_header=False, expand=False)
+                table.add_column("Option", style="cyan")
+                table.add_column("Description")
+                
+                table.add_row("1", "Add App")
+                table.add_row("2", "Back to Main Menu")
+                
+                self.console.print(table)
+                
+                choice = IntPrompt.ask(
+                    "[bold cyan]Select an option[/bold cyan]",
+                    choices=["1", "2"],
+                    default="1"
+                )
+                
+                if choice == 1:
+                    self._add_app_interactive()
+                else:
+                    break
+            else:
+                print("\nManage Apps:")
+                self._show_apps()
+                print("1. Add App")
+                print("2. Back to Main Menu")
+                
+                while True:
+                    try:
+                        choice = int(input("Select an option (1-2): "))
+                        if 1 <= choice <= 2:
+                            break
+                        print("Invalid choice. Please enter a number between 1 and 2.")
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                
+                if choice == 1:
+                    self._add_app_interactive()
+                else:
+                    break
+    
+    def _show_apps(self):
+        """Show existing apps"""
+        apps = self.structure_manager.structure['apps']
+        
+        if not apps:
+            if self.console:
+                self.console.print("[italic]No apps defined yet[/italic]")
+            else:
+                print("No apps defined yet")
+            return
+        
+        if self.console:
+            table = Table(show_header=True)
+            table.add_column("App Name", style="bold green")
+            table.add_column("Path")
+            
+            for name, path in sorted(apps.items()):
+                table.add_row(name, path)
+            
+            self.console.print("[bold]Existing Apps:[/bold]")
+            self.console.print(table)
+        else:
+            print("Existing Apps:")
+            for name, path in sorted(apps.items()):
+                print(f"  - {name}: {path}")
+    
+    def _add_app_interactive(self):
+        """Add app interactively"""
+        if self.console:
+            name = Prompt.ask("[bold cyan]Enter app name[/bold cyan]")
+            
+            # show directory structure for directory selection
+            self._show_directories()
+            
+            directory = Prompt.ask(
+                "[bold cyan]Enter directory for app (leave empty for root)[/bold cyan]",
+                default=""
+            )
+            
+            try:
+                self.structure_manager.add_app(name, directory)
+                self.console.print(f"[green]App '{name}' added![/green]")
+            except Exception as e:
+                self.console.print(f"[bold red]Error: {e}[/bold red]")
+        else:
+            name = input("Enter app name: ")
+            
+            # show directory structure for directory selection
+            self._show_directories()
+            
+            directory = input("Enter directory for app (leave empty for root): ") or ""
+            
+            try:
+                self.structure_manager.add_app(name, directory)
+                print(f"App '{name}' added!")
+            except Exception:
+                print(f"Cannot add the app {name}")
+
+
+if __name__ == "__main__":
+    cli = DjangoBoilerplateCLI()
+    cli.run()
