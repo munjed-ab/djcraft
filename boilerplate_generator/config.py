@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-
 class Config:
     DEFAULT_PROJECT_STRUCTURE = {
         'apps_dir': 'apps',
