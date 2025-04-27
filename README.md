@@ -10,17 +10,13 @@ poetry shell
 # Interactive mode:
 
 ```
-cd boilerplate_generator
-poetry run python cli.py interactive
+cd dj-eleva
+poetry run python main.py interactive
 ```
 
-# V1
+# Genaerate mode:
 
 ```
-poetry run python -m boilerplate_generator.cli myproject `
---apps users products blog `
---core-location root `
---docker `
---celery `
---redis
+cd dj-eleva
+poetry run python main.py generate newproject_config.yaml
 ```
