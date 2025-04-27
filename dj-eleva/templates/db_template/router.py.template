@@ -1,0 +1,51 @@
+# Database router for multi-database setup
+
+class DatabaseRouter:
+    """
+    A router to control all database operations on models.
+    """
+    route_app_labels = {
+        # Example: 'myapp': 'mydatabase', # Map 'myapp' to 'mydatabase'
+        # TODO: Define how your apps should be routed to different databases
+    }
+
+    def db_for_read(self, model, **hints):
+        """
+        Attempts to read auth and contenttypes models go to the default database.
+        All other models go to their specified database or the default.
+        """
+        if model._meta.app_label in ['auth', 'contenttypes', 'admin', 'sessions']:
+            return 'default'
+        return self.route_app_labels.get(model._meta.app_label, 'default')
+
+    def db_for_write(self, model, **hints):
+        """
+        Attempts to write auth and contenttypes models go to the default database.
+        All other models go to their specified database or the default.
+        """
+        if model._meta.app_label in ['auth', 'contenttypes', 'admin', 'sessions']:
+            return 'default'
+        return self.route_app_labels.get(model._meta.app_label, 'default')
+
+    def allow_relation(self, obj1, obj2, **hints):
+        """
+        Allow relations if a relation between apps is allowed.
+        """
+        # Allow relations between models in the same database
+        if obj1._state.db == obj2._state.db:
+            return True
+
+        # TODO: Define specific cross-database relation rules if needed
+        return None
+
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        """
+        Make sure the auth and contenttypes apps only appear in the 'default'
+        database. All other apps may go anywhere.
+        """
+        if app_label in ['auth', 'contenttypes', 'admin', 'sessions']:
+            return db == 'default'
+
+        # Allow migration for apps in their specified database or the default
+        return self.route_app_labels.get(app_label, 'default') == db
+

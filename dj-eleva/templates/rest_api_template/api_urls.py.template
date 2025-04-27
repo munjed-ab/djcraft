@@ -1,0 +1,43 @@
+# templates/api_template/urls.py.template
+# Main URLs for the API app
+
+from django.urls import path, include
+{% if swagger %}
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+{% endif %}
+
+{% if swagger %}
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Your API",
+        default_version='v1',
+        description="API documentation for your project",
+        terms_of_service="https://www.google.com/policies/terms/", # TODO: Update terms of service URL
+        contact=openapi.Contact(email="contact@yourproject.local"), # TODO: Update contact email
+        license=openapi.License(name="BSD License"), # TODO: Update license
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+{% endif %}
+
+urlpatterns = [
+    {% if versioning %}
+    # Include versioned API URLs
+    path('v1/', include('api.v1.urls')), # TODO: Add other versions as needed
+    {% else %}
+    # Include non-versioned API URLs
+    # path('items/', include('your_app.api.urls')),
+    {% endif %}
+
+    {% if swagger %}
+    # Swagger / OpenAPI documentation URLs
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    {% endif %}
+
+    # TODO: Add other API-level URL patterns here
+]
+

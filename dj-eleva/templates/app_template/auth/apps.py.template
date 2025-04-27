@@ -1,0 +1,13 @@
+from django.apps import AppConfig
+
+
+class {{ app_name|title }}Config(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = '{{ app_import_path }}'
+    
+    def ready(self):
+        # Import signals to register them
+        try:
+            import {{ app_import_path }}.signals
+        except ImportError:
+            pass

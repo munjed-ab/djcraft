@@ -1,0 +1,14 @@
+from .base import *
+import dj_database_url
+
+DEBUG = False
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+
+DATABASES = {
+    'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
+}
+
+# Production-specific static/media settings

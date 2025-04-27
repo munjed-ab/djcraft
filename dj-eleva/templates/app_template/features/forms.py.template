@@ -1,0 +1,18 @@
+from django import forms
+
+from {{ app_import_path }}.models import *
+
+# Create your forms here
+# Example:
+# class ItemForm(forms.ModelForm):
+#     class Meta:
+#         model = Item
+#         fields = ['name', 'description']
+#         widgets = {
+#             'description': forms.Textarea(attrs={'rows': 4}),
+#         }
+#
+#     def clean_name(self):
+#         name = self.cleaned_data.get('name')
+#         # Add custom validation here
+#         return name

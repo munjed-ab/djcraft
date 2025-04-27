@@ -1,0 +1,40 @@
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+from {{ app_import_path }}.models import *
+
+# Create your class-based views here
+# Example for a model called 'Item':
+#
+# class ItemListView(ListView):
+#     model = Item
+#     template_name = '{{ app_name }}/item_list.html'
+#     context_object_name = 'items'
+#     paginate_by = 10
+#
+# class ItemDetailView(DetailView):
+#     model = Item
+#     template_name = '{{ app_name }}/item_detail.html'
+#     context_object_name = 'item'
+#
+# class ItemCreateView(LoginRequiredMixin, CreateView):
+#     model = Item
+#     template_name = '{{ app_name }}/item_form.html'
+#     fields = ['name', 'description']
+#     success_url = reverse_lazy('{{ app_name }}:item-list')
+#
+# class ItemUpdateView(LoginRequiredMixin, UpdateView):
+#     model = Item
+#     template_name = '{{ app_name }}/item_form.html'
+#     fields = ['name', 'description']
+#     context_object_name = 'item'
+#
+#     def get_success_url(self):
+#         return reverse_lazy('{{ app_name }}:item-detail', kwargs={'pk': self.object.pk})
+#
+# class ItemDeleteView(LoginRequiredMixin, DeleteView):
+#     model = Item
+#     template_name = '{{ app_name }}/item_confirm_delete.html'
+#     context_object_name = 'item'
+#     success_url = reverse_lazy('{{ app_name }}:item-list')

@@ -1,0 +1,42 @@
+# Required: The name of your Django project
+project_name: newproject
+
+# Optional: Configure the core Django files location
+core:
+  location: custom
+  path: config/core
+
+# Optional: Define directories
+directories:
+- name: config
+  parent: ''
+- name: core
+  parent: config
+- name: hr
+  parent: ''
+
+# Optional: Define apps and their directories
+apps:
+- directory: ''
+  name: proc
+- directory: hr
+  name: users
+
+# Optional: Define services and their options
+services:
+- name: docker
+  options:
+    default_services: web
+    python_version: '3.11'
+- name: rest_api
+  options:
+    swagger: true
+    throttling: true
+    versioning: true
+- name: authentication
+  options:
+    method: oauth
+    social_providers: google
+
+# Optional: Environment setting (used in settings/__init__.py)
+env: dev

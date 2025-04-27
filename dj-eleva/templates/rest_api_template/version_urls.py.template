@@ -1,0 +1,11 @@
+# templates/api_template/version_urls.py.template
+# Example URL patterns for a specific API version (e.g., v1)
+
+from django.urls import path, include
+
+urlpatterns = [
+    # Example: include URLs from an app within this version
+    # path('items/', include('your_app.api.v{{ version }}.urls')),
+    # TODO: Add your API version-specific URL patterns here
+]
+

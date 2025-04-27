@@ -1,0 +1,19 @@
+# templates/auth_template/models_oauth.py.template
+# Basic models for OAuth authentication (using django-allauth)
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class CustomUser(AbstractUser):
+    """
+    Custom user model for OAuth authentication (using django-allauth).
+    Add any additional fields here.
+    """
+    # django-allauth handles most social account details,
+    # but you can add custom fields if needed.
+    # Example:
+    # profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+
+    def __str__(self):
+        return self.username
+

@@ -1,0 +1,5 @@
+# __init__.py for the database router directory
+
+# This file makes the 'database' directory a Python package.
+# You can add imports or other initialization code here if needed.
+

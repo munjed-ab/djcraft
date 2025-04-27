@@ -1,0 +1,77 @@
+# Docker Compose file for the Django project
+
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      {% if use_redis %}
+      - redis
+      {% endif %}
+      {% if use_celery %}
+      - celery_worker
+      - celery_beat
+      {% endif %}
+
+  db:
+    image: postgres:{{ postgres_version }} # Use the specified PostgreSQL version
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: ${DB_NAME:-django} # Default to 'django' if DB_NAME is not set
+      POSTGRES_USER: ${DB_USER:-postgres} # Default to 'postgres' if DB_USER is not set
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres} # Default to 'postgres' if DB_PASSWORD is not set
+    ports:
+      - "5432:5432" # Optional: expose port if needed for local access
+
+  {% if use_redis %}
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379" # Optional: expose port if needed for local access
+  {% endif %}
+
+  {% if use_celery %}
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    command: celery -A {{ project_name }}.celery worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db # Celery worker might need database access depending on tasks
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    command: celery -A {{ project_name }}.celery beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db # Celery beat needs database access for scheduler
+  {% endif %}
+
+volumes:
+  postgres_data: # Volume for PostgreSQL data persistence

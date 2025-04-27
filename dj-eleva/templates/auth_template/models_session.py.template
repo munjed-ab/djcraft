@@ -1,0 +1,17 @@
+# templates/auth_template/models_session.py.template
+# Basic models for session authentication
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class CustomUser(AbstractUser):
+    """
+    Custom user model for session authentication.
+    Add any additional fields here.
+    """
+    # Example additional field:
+    # date_of_birth = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return self.username
+

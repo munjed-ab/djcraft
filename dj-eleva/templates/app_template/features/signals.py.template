@@ -1,0 +1,20 @@
+from django.db.models.signals import post_save, pre_delete
+from django.dispatch import receiver
+
+from {{ app_import_path }}.models import *
+
+# Create your signals here
+# Example:
+# @receiver(post_save, sender=YourModel)
+# def handle_model_save(sender, instance, created, **kwargs):
+#     if created:
+#         # Do something when a new instance is created
+#         pass
+#     else:
+#         # Do something when an existing instance is updated
+#         pass
+#
+# @receiver(pre_delete, sender=YourModel)
+# def handle_model_delete(sender, instance, **kwargs):
+#     # Do something before an instance is deleted
+#     pass

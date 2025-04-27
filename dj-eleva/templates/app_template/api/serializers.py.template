@@ -1,0 +1,11 @@
+from rest_framework import serializers
+
+from {{ app_import_path }}.models import *
+
+# Create your serializers here
+# Example:
+# class ItemSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Item
+#         fields = ['id', 'name', 'description', 'created_at']
+#         read_only_fields = ['created_at']
