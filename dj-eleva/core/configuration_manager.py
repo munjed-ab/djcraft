@@ -172,7 +172,7 @@ class ConfigurationManager:
         }
         
         if self._runtime_config:
-            # Add any additional sections from runtime config
+            # add any additional sections from runtime config
             for key, value in self._runtime_config.to_dict().items():
                 if key not in config:
                     config[key] = value

@@ -1,10 +1,9 @@
-
 import sys
 
 from core.config import DefaultSettings
 from core.exceptions import DjangoBoilerplateError
 from core.project_structure_manager import ProjectStructureManager
-from generator.base_generator import (
+from generator.generator import (
     DjangoProjectGenerator,
 )
 from rich.console import Console

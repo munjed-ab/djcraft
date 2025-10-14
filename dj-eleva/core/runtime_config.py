@@ -37,7 +37,6 @@ class RuntimeConfig:
             if not isinstance(yaml_config, dict):
                 raise ConfigurationError("YAML configuration must be a dictionary")
 
-            # Start with default settings
             config = {
                 'project_structure': asdict(DefaultSettings.PROJECT_STRUCTURE),
                 'files': asdict(DefaultSettings.DEFAULT_FILES),
@@ -49,18 +48,15 @@ class RuntimeConfig:
                 'services': []
             }
 
-            # Update CLI defaults with project name from YAML
             if 'project_name' in yaml_config:
                 config['cli']['project_name'] = yaml_config['project_name']
 
-            # Handle core structure if specified
             if 'core' in yaml_config:
                 if 'location' in yaml_config['core']:
                     config['project_structure']['core_location'] = yaml_config['core']['location']
                 if 'path' in yaml_config['core']:
                     config['project_structure']['core_path'] = yaml_config['core']['path']
 
-            # Extract directories, apps, and services
             if 'directories' in yaml_config:
                 config['directories'] = yaml_config['directories']
             
@@ -70,12 +66,12 @@ class RuntimeConfig:
             if 'services' in yaml_config:
                 config['services'] = yaml_config['services']
 
-            # Merge additional sections from YAML
+            # merge additional sections from YAML
             for section in ['project_structure', 'files', 'template', 'django', 'cli']:
                 if section in yaml_config:
                     config[section].update(yaml_config[section])
 
-            # Create RuntimeConfig instance
+            # create RuntimeConfig instance
             return cls(
                 project_structure=ProjectStructureDefaultSettings(**config['project_structure']),
                 files=FilesDefaultSettings(**config['files']),

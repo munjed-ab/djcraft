@@ -3,7 +3,7 @@ import sys
 
 from core.configuration_manager import ConfigurationManager
 from core.project_structure_manager import ProjectStructureManager
-from generator.base_generator import DjangoProjectGenerator
+from generator.generator import DjangoProjectGenerator
 
 from .config_io import validate_config
 from .interactive.ui import preview_structure

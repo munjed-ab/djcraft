@@ -1,1 +1,1 @@
-from .base_generator import DjangoProjectGenerator
+from .generator import DjangoProjectGenerator

@@ -1,11 +1,9 @@
-# generator/rendering/renderer_strategy.py
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 
 class RendererStrategy(ABC):
-    """Abstract base class for renderer strategies implementing the Strategy pattern."""
 
     @abstractmethod
     def render_template(self, template_name: str, output_path: Path, context: Optional[Dict[str, Any]] = None) -> None:
@@ -19,7 +17,6 @@ class RendererStrategy(ABC):
 
 
 class Jinja2RendererStrategy(RendererStrategy):
-    """Concrete implementation of RendererStrategy using Jinja2."""
 
     def __init__(self, template_dir: str):
         """Initialize the Jinja2RendererStrategy with the template directory."""

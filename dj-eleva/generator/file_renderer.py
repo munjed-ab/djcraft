@@ -5,12 +5,9 @@ from .rendering import Jinja2RendererStrategy, RendererStrategy
 
 
 class FileRenderer:
-    """
-    Handles rendering templates to generate project files using the Strategy pattern.
-    """
     def __init__(self, template_dir: str, renderer_strategy: Optional[RendererStrategy] = None):
         """
-        Initialize the FileRenderer with the template directory and renderer strategy.
+        Initialize the FileRenderer with the template directory and renderer.
 
         Args:
             template_dir: The path to the directory containing template files.

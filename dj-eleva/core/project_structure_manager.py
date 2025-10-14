@@ -17,7 +17,6 @@ class ProjectStructureManager:
     Manages the structure of a Django project with flexible directory layouts.
     """
     def __init__(self, project_name: str):
-        """Initialize the project structure manager with a project name"""
         if not StructureRules.is_valid_project_name(project_name):
             raise InvalidProjectNameError(f"Invalid project name: {project_name}")
         

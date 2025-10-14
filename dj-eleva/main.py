@@ -26,7 +26,7 @@ class DjangoBoilerplateCLI:
         self.structure_manager = None
 
     def run(self):
-        """Main entry point for the CLI"""
+        """Main entry point for CLI"""
         parser = create_argument_parser()
         args = parser.parse_args()
 
