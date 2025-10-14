@@ -31,7 +31,7 @@ def ask_core_location(console: Console) -> Tuple[str, str]:
         console=console
     )
 
-    location_type = options[choice - 1]
+    location_type = options[int(choice) - 1]
     core_path = "core"  # Default path for custom location
 
     if location_type == "custom":

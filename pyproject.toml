@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dj-eleva"
+name = "djcraft"
 version = "0.1.0"
 description = "Boilerplate generator for django projects."
 authors = ["munjed-ab <abazamunged@gmail.com>"]

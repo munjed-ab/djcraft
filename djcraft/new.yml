@@ -1,0 +1,27 @@
+# Required: The name of your Django project
+project_name: myproject
+
+# Optional: Configure the core Django files location
+core:
+  location: custom
+  path: my/core
+
+# Optional: Define directories
+directories:
+- name: apps
+  parent: ''
+- name: my
+  parent: ''
+- name: core
+  parent: my
+
+# Optional: Define apps and their directories
+apps:
+- directory: apps
+  name: users
+
+# Optional: Define services and their options
+services: []
+
+# Optional: Environment setting (used in settings/__init__.py)
+env: dev

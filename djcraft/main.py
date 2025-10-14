@@ -8,7 +8,7 @@ from cli.commands import (
     handle_validate_command,
 )
 from cli.interactive import run_interactive_mode
-from core.exceptions import DjangoBoilerplateError
+from core.exceptions import DjCraftError 
 
 try:
     from rich.console import Console
@@ -17,7 +17,7 @@ except ImportError:
     RICH_AVAILABLE = False
 
 
-class DjangoBoilerplateCLI:
+class DjCraftCli:
     """
     Command Line Interface for Django Boilerplate Generator
     """
@@ -45,7 +45,7 @@ class DjangoBoilerplateCLI:
                 handle_validate_command(args.config_file, self.console, RICH_AVAILABLE)
             else:
                 parser.print_help()
-        except DjangoBoilerplateError as e:
+        except DjCraftError as e:
             self._print_error(f"Error: {e}")
             sys.exit(1)
         except Exception as e:
@@ -71,5 +71,5 @@ class DjangoBoilerplateCLI:
 
 
 if __name__ == "__main__":
-    cli = DjangoBoilerplateCLI()
+    cli = DjCraftCli()
     cli.run()

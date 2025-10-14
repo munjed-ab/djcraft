@@ -12,7 +12,7 @@ def print_welcome(console: Console):
     console.print(Panel(
         "[bold green]Django Boilerplate Generator[/bold green]\n\n"
         "Create a fully customized Django project with flexible structure and services.",
-        title="Welcome",
+        title="djcraft",
         expand=False
     ))
 

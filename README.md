@@ -17,6 +17,6 @@ poetry run python main.py interactive
 # Genaerate mode:
 
 ```
-cd dj-eleva
+cd djcraft
 poetry run python main.py generate newproject_config.yaml
 ```

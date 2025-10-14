@@ -1,9 +1,9 @@
-class DjangoBoilerplateError(Exception):
+class DjCraftError(Exception):
     """Base exception class for all boilerplate generator exceptions"""
     pass
 
 
-class InvalidProjectNameError(DjangoBoilerplateError):
+class InvalidProjectNameError(DjCraftError):
     """Raised when an invalid project name is provided"""
     
     def __init__(self, name: str):
@@ -17,7 +17,7 @@ class InvalidProjectNameError(DjangoBoilerplateError):
         )
 
 
-class InvalidAppNameError(DjangoBoilerplateError):
+class InvalidAppNameError(DjCraftError):
     """Raised when an invalid app name is provided"""
     
     def __init__(self, name: str):
@@ -31,7 +31,7 @@ class InvalidAppNameError(DjangoBoilerplateError):
         )
 
 
-class TemplateRenderError(DjangoBoilerplateError):
+class TemplateRenderError(DjCraftError):
     """Raised when there's an error during template rendering."""
     # Corrected: Accept the original exception as an argument
     def __init__(self, message: str, error: Exception):
@@ -43,7 +43,7 @@ class TemplateRenderError(DjangoBoilerplateError):
         return f"{self.message} (Original error: {self.original_error})"
 
 
-class DirectoryCreationError(DjangoBoilerplateError):
+class DirectoryCreationError(DjCraftError):
     """Raised when unable to create project directories"""
     
     def __init__(self, path: str, error: str):
@@ -54,7 +54,7 @@ class DirectoryCreationError(DjangoBoilerplateError):
         )
 
 
-class FileGenerationError(DjangoBoilerplateError):
+class FileGenerationError(DjCraftError):
     """Raised when unable to generate a file"""
     
     def __init__(self, file_path: str, error: str):
@@ -65,7 +65,7 @@ class FileGenerationError(DjangoBoilerplateError):
         )
 
 
-class ConfigurationError(DjangoBoilerplateError):
+class ConfigurationError(DjCraftError):
     """Raised when there's an error in the configuration"""
     
     def __init__(self, setting: str, error: str):
@@ -76,7 +76,7 @@ class ConfigurationError(DjangoBoilerplateError):
         )
 
 
-class DependencyError(DjangoBoilerplateError):
+class DependencyError(DjCraftError):
     """Raised when a required dependency is missing"""
     
     def __init__(self, dependency: str, reason: str):
@@ -87,7 +87,7 @@ class DependencyError(DjangoBoilerplateError):
         )
 
 
-class EnvironmentError(DjangoBoilerplateError):
+class EnvironmentError(DjCraftError):
     """Raised when there's an environment-specific error"""
     
     def __init__(self, env: str, error: str):

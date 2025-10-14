@@ -1,7 +1,7 @@
 import sys
 
 from core.config import DefaultSettings
-from core.exceptions import DjangoBoilerplateError
+from core.exceptions import DjCraftError 
 from core.project_structure_manager import ProjectStructureManager
 from generator.generator import (
     DjangoProjectGenerator,
@@ -60,7 +60,7 @@ def run_interactive_mode(console: Console) -> ProjectStructureManager:
 
         return structure_manager
 
-    except DjangoBoilerplateError as e:
+    except DjCraftError as e:
         console.print(f"[bold red]Error during interactive mode: {e}[/bold red]")
         sys.exit(1)
     except Exception as e:

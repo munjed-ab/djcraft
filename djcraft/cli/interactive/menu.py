@@ -1,5 +1,5 @@
 from core.configuration_manager import ConfigurationManager
-from core.exceptions import DjangoBoilerplateError
+from core.exceptions import DjCraftError
 from core.project_structure_manager import ProjectStructureManager
 from rich.console import Console
 from rich.prompt import IntPrompt
@@ -60,7 +60,7 @@ def _configure_core_location(structure_manager: ProjectStructureManager, console
     try:
         structure_manager.set_core_location(location_type, core_path)
         console.print("[green]Core location updated![/green]")
-    except DjangoBoilerplateError as e:
+    except DjCraftError as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
 
 
@@ -91,7 +91,7 @@ def _add_directory_interactive(structure_manager: ProjectStructureManager, conso
     try:
         path = structure_manager.add_directory(name, parent)
         console.print(f"[green]Directory '{path}' added![/green]")
-    except DjangoBoilerplateError as e:
+    except DjCraftError as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
 
 
@@ -122,7 +122,7 @@ def _add_app_interactive(structure_manager: ProjectStructureManager, console: Co
     try:
         structure_manager.add_app(name, directory)
         console.print(f"[green]App '{name}' added![/green]")
-    except DjangoBoilerplateError as e:
+    except DjCraftError as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
 
 
@@ -161,5 +161,5 @@ def _add_service_interactive(structure_manager: ProjectStructureManager, console
     try:
         structure_manager.add_service(service_name, options)
         console.print(f"[green]Service '{service_name}' added![/green]")
-    except DjangoBoilerplateError as e:
+    except DjCraftError as e:
         console.print(f"[bold red]Error adding service: {e}[/bold red]")

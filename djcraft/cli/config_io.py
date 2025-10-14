@@ -5,7 +5,6 @@ from typing import Dict, List
 
 import yaml
 from core.configuration_manager import ConfigurationManager
-from core.exceptions import DjangoBoilerplateError
 from core.project_structure_manager import ProjectStructureManager
 from core.rules import StructureRules
 

@@ -5,7 +5,6 @@ from core.config import DefaultSettings
 
 
 def create_argument_parser():
-    """Create argument parser for CLI"""
     parser = argparse.ArgumentParser(
         description='Django Project Boilerplate Generator',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
