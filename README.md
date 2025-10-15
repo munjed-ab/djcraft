@@ -327,4 +327,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built for internal team use at [Eleva](elevagroup.co)**
+**Built for internal team use at [Eleva](https://elevagroup.co)**
