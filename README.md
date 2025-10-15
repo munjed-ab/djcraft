@@ -1,3 +1,4 @@
+```text
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ░░██████ ░░░░░░██ ░██████ ██████ ░░█████ ░███████ ████████ ░░
 ░░██ ░░██ ░░░░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
@@ -5,7 +6,7 @@
 ░░██ ░░██ ██ ░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
 ░░██████ ░░█████ ░░██████ ██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-
+```
 # djcraft 
 
 A CLI tool for generating Django project boilerplates with customizable structures, flexible directory layouts, and built-in support for common services like Docker, Celery, and Redis.
