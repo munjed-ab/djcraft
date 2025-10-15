@@ -27,6 +27,7 @@ poetry shell
 ### Interactive Mode (Recommended)
 
 ```bash
+cd djcraft
 python main.py interactive
 ```
 
@@ -326,4 +327,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built for internal team use at [Eleva]**
+**Built for internal team use at [Eleva](elevagroup.co)**
