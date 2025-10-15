@@ -9,11 +9,28 @@ from rich.tree import Tree
 
 def print_welcome(console: Console):
     """Prints the welcome message for interactive mode."""
+    import shutil
+
+    name = """
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+░░██████ ░░░░░░██ ░██████ ██████ ░░█████ ░███████ ████████ ░░
+░░██ ░░██ ░░░░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
+░░██ ░░██ ░░░░░██ ██ ░░░░░██████ ░███████ █████ ░░░░░██ ░░░░░
+░░██ ░░██ ██ ░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
+░░██████ ░░█████ ░░██████ ██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+"""
+
+    width = shutil.get_terminal_size().columns
+
+    for line in name.splitlines():
+        print(line.center(width))
+    
     console.print(Panel(
         "[bold green]Django Boilerplate Generator[/bold green]\n\n"
         "Create a fully customized Django project with flexible structure and services.",
         title="djcraft",
-        expand=False
+        expand=True
     ))
 
 
