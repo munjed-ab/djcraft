@@ -20,9 +20,6 @@ git clone https://github.com/munjed-ab/djcraft.git
 # Install dependencies
 poetry install
 poetry shell
-
-# Optional: Install Rich for better CLI experience
-pip install rich
 ```
 
 ## Quick Start
