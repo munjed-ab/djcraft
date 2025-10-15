@@ -339,6 +339,7 @@ class ServiceGenerator(BaseGenerator):
         self.requirements_manager.add_packages(['gunicorn', 'psycopg2-binary'])
     
     def _generate_celery(self, options: Dict[str, Any]) -> None:
+        print(self.structure_manager.get_core_path_str().replace('/', '.'))
         core_path = self.structure_manager.get_core_path()
         
         context = {

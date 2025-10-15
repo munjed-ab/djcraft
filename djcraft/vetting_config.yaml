@@ -1,0 +1,41 @@
+# Required: The name of your Django project
+project_name: vetting
+
+# Optional: Configure the core Django files location
+core:
+  location: custom
+  path: core/config
+
+# Optional: Define directories
+directories:
+- name: apps
+  parent: ''
+- name: common
+  parent: apps
+- name: services
+  parent: apps
+- name: core
+  parent: ''
+- name: config
+  parent: core
+
+# Optional: Define apps and their directories
+apps:
+- directory: apps/common
+  name: users
+- directory: apps/services
+  name: vetting
+
+# Optional: Define services and their options
+services:
+- name: docker
+  options:
+    postgres_version: '15'
+    python_version: '3.11'
+- name: celery
+  options:
+    broker: redis
+    use_flower: true
+
+# Optional: Environment setting (used in settings/__init__.py)
+env: dev
