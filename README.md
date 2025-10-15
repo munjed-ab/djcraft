@@ -1,13 +1,7 @@
-```text
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-░░██████ ░░░░░░██ ░██████ ██████ ░░█████ ░███████ ████████ ░░
-░░██ ░░██ ░░░░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
-░░██ ░░██ ░░░░░██ ██ ░░░░░██████ ░███████ █████ ░░░░░██ ░░░░░
-░░██ ░░██ ██ ░░██ ██ ░░░░░██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
-░░██████ ░░█████ ░░██████ ██ ░░██ ██ ░░██ ██ ░░░░░░░░██ ░░░░░
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-```
-# djcraft 
+
+# djcraft
+<img width="802" height="352" alt="Screenshot 2025-10-15 141908" src="https://github.com/user-attachments/assets/713693d8-6116-4141-9eb1-481f59fd218a" />
+ 
 
 A CLI tool for generating Django project boilerplates with customizable structures, flexible directory layouts, and built-in support for common services like Docker, Celery, and Redis.
 
