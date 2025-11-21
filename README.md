@@ -104,62 +104,6 @@ Then generate:
 python main.py generate project_config.yaml
 ```
 
-## Project Structure Examples
-
-### Simple Structure
-
-```
-myproject/
-├── manage.py
-├── requirements.txt
-├── .gitignore
-├── README.md
-├── core/                    # Django core files
-│   ├── __init__.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   ├── asgi.py
-│   └── settings/
-│       ├── __init__.py
-│       ├── base.py
-│       ├── dev.py
-│       └── prod.py
-├── blog/                    # Django app
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── migrations/
-│   └── tests/
-└── users/                   # Django app
-    ├── __init__.py
-    ├── admin.py
-    └── ...
-```
-
-### Nested Structure
-
-```
-myproject/
-├── manage.py
-├── config/                  # Core files in custom location
-│   ├── __init__.py
-│   ├── urls.py
-│   └── settings/
-├── apps/                    # Apps grouped together
-│   ├── blog/
-│   ├── users/
-│   └── comments/
-├── api/                     # API apps separated
-│   ├── blog_api/
-│   └── users_api/
-├── static/
-├── media/
-└── templates/
-```
-
 ## CLI Commands
 
 ### `create` - Create a New Project
